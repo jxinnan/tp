@@ -7,11 +7,11 @@
       "headings": {
         "about-us": "About Us",
         "project-team": "Project team",
-        "john-doe": "John Doe",
-        "jane-doe": "Jane Doe",
-        "johnny-doe": "Johnny Doe",
-        "jean-doe": "Jean Doe",
-        "james-doe": "James Doe"
+        "dillion-lim": "Dillion Lim",
+        "jiang-xinnan": "Jiang Xinnan",
+        "nguyen-phuc-thang": "Nguyen Phuc Thang",
+        "ng-see-jay": "Ng See Jay",
+        "rui-hong": "Rui Hong"
       },
       "headingKeywords": {}
     },
@@ -51,6 +51,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "field-values": "Field values",
         "proposed-undo-redo-feature": "[Proposed] Undo/redo feature",
         "proposed-data-archiving": "[Proposed] Data archiving",
         "documentation-logging-testing-dev-ops": "Documentation, logging, testing, dev-ops",
