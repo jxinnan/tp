@@ -3,6 +3,7 @@ package seedu.tab.model.student;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -22,7 +23,25 @@ public class DetailsContainsKeywordsPredicate implements Predicate<Student> {
     private static final Pattern NON_DIGIT = Pattern.compile("\\P{Nd}");
 
     /** The student field in which a search term must occur. */
-    public enum Field { NAME, NUS_STUDENT_ID, PHONE, EMAIL, TAG }
+    public enum Field {
+        NAME((student, keyword) -> StringUtil.containsIgnoreCase(student.getName().fullName, keyword)),
+        NUS_STUDENT_ID((student, keyword) -> StringUtil.containsIgnoreCase(
+                student.getNusStudentId().map(NusStudentId::toString).orElse(""), keyword)),
+        PHONE((student, keyword) -> matchesPhone(student.getPhone(), keyword)),
+        EMAIL((student, keyword) -> StringUtil.containsIgnoreCase(
+                student.getEmail().map(Email::toString).orElse(""), keyword)),
+        TAG(DetailsContainsKeywordsPredicate::matchesAnyTag);
+
+        private final BiPredicate<Student, String> matcher;
+
+        Field(BiPredicate<Student, String> matcher) {
+            this.matcher = matcher;
+        }
+
+        private boolean matches(Student student, String keyword) {
+            return matcher.test(student, keyword);
+        }
+    }
 
     private final Map<Field, List<String>> keywordsByField;
 
@@ -36,19 +55,7 @@ public class DetailsContainsKeywordsPredicate implements Predicate<Student> {
     public boolean test(Student student) {
         return keywordsByField.values().stream().anyMatch(keywords -> !keywords.isEmpty())
                 && keywordsByField.entrySet().stream().allMatch(entry -> entry.getValue().stream()
-                        .allMatch(keyword -> matchesField(student, entry.getKey(), keyword)));
-    }
-
-    private static boolean matchesField(Student student, Field field, String keyword) {
-        return switch (field) {
-            case NAME -> StringUtil.containsIgnoreCase(student.getName().fullName, keyword);
-            case NUS_STUDENT_ID -> StringUtil.containsIgnoreCase(
-                    student.getNusStudentId().map(NusStudentId::toString).orElse(""), keyword);
-            case PHONE -> matchesPhone(student.getPhone(), keyword);
-            case EMAIL -> StringUtil.containsIgnoreCase(student.getEmail().map(Email::toString).orElse(""), keyword);
-            case TAG -> matchesAnyTag(student, keyword);
-            default -> throw new IllegalArgumentException("Unknown search field: " + field);
-        };
+                        .allMatch(keyword -> entry.getKey().matches(student, keyword)));
     }
 
     private static boolean matchesPhone(Phone phone, String keyword) {

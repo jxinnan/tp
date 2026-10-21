@@ -170,6 +170,7 @@ public class DetailsContainsKeywordsPredicateTest {
                 new StudentBuilder().withEmail("jason@nus.edu.sg").build(),
                 new StudentBuilder().withTags("friend").build());
         List<Field> fields = List.of(Field.NAME, Field.NUS_STUDENT_ID, Field.PHONE, Field.EMAIL, Field.TAG);
+        assertEquals(List.of(Field.values()), fields);
         List<String> terms = List.of("jASon", "a0123", "9123-4567", "NUS.EDU", "rIeNd");
         for (int i = 0; i < fields.size(); i++) {
             DetailsContainsKeywordsPredicate predicate =
