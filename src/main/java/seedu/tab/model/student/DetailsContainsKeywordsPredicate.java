@@ -1,6 +1,8 @@
 package seedu.tab.model.student;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -8,10 +10,9 @@ import seedu.tab.commons.util.StringUtil;
 import seedu.tab.commons.util.ToStringBuilder;
 
 /**
- * Tests that a {@code Student}'s details match any of the keywords given.
- * A keyword matches when it appears in the student's name, phone, email, NUS Student ID
- * or tags, ignoring case and allowing partial matches, or when it names the follow-up
- * flag by opening the label {@code Needs follow-up} or one of its words.
+ * Tests that a {@code Student}'s details match every search condition given.
+ * Each term matches only its selected name, NUS Student ID, phone, email or tag field,
+ * ignoring case and allowing partial matches.
  * A keyword made only of digits and the punctuation a phone number is written with
  * also matches the phone's digits with non-digit characters removed.
  */
@@ -20,25 +21,34 @@ public class DetailsContainsKeywordsPredicate implements Predicate<Student> {
     private static final Pattern PHONE_KEYWORD = Pattern.compile("[\\p{Nd}+().-]*\\p{Nd}[\\p{Nd}+().-]*");
     private static final Pattern NON_DIGIT = Pattern.compile("\\P{Nd}");
 
-    private final List<String> keywords;
+    /** The student field in which a search term must occur. */
+    public enum Field { NAME, NUS_STUDENT_ID, PHONE, EMAIL, TAG }
 
-    public DetailsContainsKeywordsPredicate(List<String> keywords) {
-        this.keywords = keywords;
+    private final Map<Field, List<String>> keywordsByField;
+
+    /** Creates a predicate requiring every term to match its selected field. */
+    public DetailsContainsKeywordsPredicate(Map<Field, List<String>> keywordsByField) {
+        this.keywordsByField = new EnumMap<>(Field.class);
+        keywordsByField.forEach((field, keywords) -> this.keywordsByField.put(field, List.copyOf(keywords)));
     }
 
     @Override
     public boolean test(Student student) {
-        return keywords.stream().anyMatch(keyword -> matchesKeyword(student, keyword));
+        return keywordsByField.values().stream().anyMatch(keywords -> !keywords.isEmpty())
+                && keywordsByField.entrySet().stream().allMatch(entry -> entry.getValue().stream()
+                        .allMatch(keyword -> matchesField(student, entry.getKey(), keyword)));
     }
 
-    private static boolean matchesKeyword(Student student, String keyword) {
-        return StringUtil.containsIgnoreCase(student.getName().fullName, keyword)
-                || matchesPhone(student.getPhone(), keyword)
-                || StringUtil.containsIgnoreCase(student.getEmail().map(Email::toString).orElse(""), keyword)
-                || StringUtil.containsIgnoreCase(
-                        student.getNusStudentId().map(NusStudentId::toString).orElse(""), keyword)
-                || matchesAnyTag(student, keyword)
-                || student.getFlag().stream().anyMatch(flag -> flag.matchesKeyword(keyword));
+    private static boolean matchesField(Student student, Field field, String keyword) {
+        return switch (field) {
+            case NAME -> StringUtil.containsIgnoreCase(student.getName().fullName, keyword);
+            case NUS_STUDENT_ID -> StringUtil.containsIgnoreCase(
+                    student.getNusStudentId().map(NusStudentId::toString).orElse(""), keyword);
+            case PHONE -> matchesPhone(student.getPhone(), keyword);
+            case EMAIL -> StringUtil.containsIgnoreCase(student.getEmail().map(Email::toString).orElse(""), keyword);
+            case TAG -> matchesAnyTag(student, keyword);
+            default -> throw new IllegalArgumentException("Unknown search field: " + field);
+        };
     }
 
     private static boolean matchesPhone(Phone phone, String keyword) {
@@ -76,12 +86,12 @@ public class DetailsContainsKeywordsPredicate implements Predicate<Student> {
             return false;
         }
 
-        return keywords.equals(otherPredicate.keywords);
+        return keywordsByField.equals(otherPredicate.keywordsByField);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this).add("keywords", keywords).toString();
+        return new ToStringBuilder(this).add("keywordsByField", keywordsByField).toString();
     }
 }
 
